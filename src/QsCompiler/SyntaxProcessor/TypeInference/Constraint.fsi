@@ -23,8 +23,10 @@ type internal ClassConstraint =
     /// A type that can be used in an operation that requires auto-generated specializations for the set of functors.
     | GenerateFunctors of callable: ResolvedType * functors: QsFunctor Set
 
+    | HasField of record: ResolvedType * field: Identifier * item: ResolvedType
+
     /// A container type that can be indexed, yielding the item type.
-    | Index of container: ResolvedType * index: ResolvedType * item: ResolvedType
+    | HasIndex of container: ResolvedType * index: ResolvedType * item: ResolvedType
 
     /// A type that represents an integer.
     | Integral of ResolvedType

@@ -170,7 +170,8 @@ module Inference =
         | ClassConstraint.Controllable (operation, _) -> [ operation ]
         | Eq ty -> [ ty ]
         | GenerateFunctors (callable, _) -> [ callable ]
-        | Index (container, index, _) -> [ container; index ]
+        | HasField (record, _, _) -> [ record ]
+        | HasIndex (container, index, _) -> [ container; index ]
         | Integral ty -> [ ty ]
         | Iterable (container, _) -> [ container ]
         | Num ty -> [ ty ]
@@ -432,7 +433,23 @@ type InferenceContext(symbolTracker: SymbolTracker) =
                             callable.Range
                 ]
             | _ -> []
-        | Index (container, index, item) ->
+        | HasField (record, field, item) ->
+            let record = context.Resolve record
+
+            match record.Resolution with
+            | QsTypeKind.UserDefinedType udt ->
+                let diagnostics = ResizeArray()
+
+                let diagnose (code, args) =
+                    error code args record.Range |> diagnostics.Add
+
+                let actualItem = symbolTracker.GetItemType field diagnose udt
+                Seq.toList diagnostics @ context.ConstrainImpl(item .> actualItem)
+            | _ ->
+                [
+                    error ErrorCode.ExpectingUserDefinedType [ SyntaxTreeToQsharp.Default.ToCode record ] record.Range
+                ]
+        | HasIndex (container, index, item) ->
             let container = context.Resolve container
             let index = context.Resolve index
 

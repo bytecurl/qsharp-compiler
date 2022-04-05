@@ -3,6 +3,7 @@
 
 namespace Microsoft.Quantum.QsCompiler.SyntaxProcessing.TypeInference
 
+open Microsoft.Quantum.QsCompiler.DataTypes
 open Microsoft.Quantum.QsCompiler.SyntaxTokens
 open Microsoft.Quantum.QsCompiler.SyntaxTree
 open Microsoft.Quantum.QsCompiler.Transformations.QsCodeOutput
@@ -13,7 +14,8 @@ type ClassConstraint =
     | Controllable of operation: ResolvedType * controlled: ResolvedType
     | Eq of ResolvedType
     | GenerateFunctors of callable: ResolvedType * functors: QsFunctor Set
-    | Index of container: ResolvedType * index: ResolvedType * item: ResolvedType
+    | HasField of record: ResolvedType * field: Identifier * item: ResolvedType
+    | HasIndex of container: ResolvedType * index: ResolvedType * item: ResolvedType
     | Integral of ResolvedType
     | Iterable of container: ResolvedType * item: ResolvedType
     | Num of ResolvedType
@@ -29,7 +31,8 @@ module ClassConstraint =
         | Controllable (operation, controlled) -> [ operation; controlled ]
         | Eq ty -> [ ty ]
         | GenerateFunctors (callable, _) -> [ callable ]
-        | Index (container, index, item) -> [ container; index; item ]
+        | HasField (record, _, item) -> [ record; item ]
+        | HasIndex (container, index, item) -> [ container; index; item ]
         | Integral ty -> [ ty ]
         | Iterable (container, item) -> [ container; item ]
         | Num ty -> [ ty ]
@@ -48,7 +51,10 @@ module ClassConstraint =
         | GenerateFunctors (callable, functors) ->
             let functors = Seq.map string functors |> String.concat ", "
             sprintf "GenerateFunctors<%s, {%s}>" (p callable) functors
-        | Index (container, index, item) -> sprintf "Indexed<%s, %s, %s>" (p container) (p index) (p item)
+        | HasField (record, field, item) ->
+            let field = Identifier(field, Null) |> SyntaxTreeToQsharp.Default.ToCode
+            sprintf "HasField<%s, \"%s\", %s>" (p record) field (p item)
+        | HasIndex (container, index, item) -> sprintf "HasIndex<%s, %s, %s>" (p container) (p index) (p item)
         | Integral ty -> sprintf "Integral<%s>" (p ty)
         | Iterable (container, item) -> sprintf "Iterable<%s, %s>" (p container) (p item)
         | Num ty -> sprintf "Num<%s>" (p ty)
